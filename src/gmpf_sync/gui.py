@@ -179,16 +179,16 @@ class SyncApp:
         ).pack(anchor="w")
 
         # 2. Status bar with Browse / Clear
-        bar = tk.Frame(outer, bg=_BG, padx=18, pady=8)
-        bar.pack(fill="x", side="top")
+        status_bar = tk.Frame(outer, bg=_BG, padx=18, pady=8)
+        status_bar.pack(fill="x", side="top")
         self.status_label = tk.Label(
-            bar, text="Drop files to begin.",
+            status_bar, text="Drop files to begin.",
             bg=_BG, fg=_FG_DIM, font=("Segoe UI", 9),
         )
         self.status_label.pack(side="left")
-        self.clear_btn = ttk.Button(bar, text="Clear", command=self._clear)
+        self.clear_btn = ttk.Button(status_bar, text="Clear", command=self._clear)
         self.clear_btn.pack(side="right")
-        self.browse_btn = ttk.Button(bar, text="Browse…", command=self._browse)
+        self.browse_btn = ttk.Button(status_bar, text="Browse…", command=self._browse)
         self.browse_btn.pack(side="right", padx=(0, 6))
 
         # 5. Console (collapsible) — packed before the cards area so that

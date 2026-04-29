@@ -17,6 +17,46 @@ gmpf-sync = "gmpf_sync.cli:main"
 
 [project.optional-dependencies]
 build = ["pyinstaller>=6.0", "pillow>=10.0"]
+dev = ["pylint>=3.0", "pytest>=7.0"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gmpf_sync"]
+
+[tool.pylint.main]
+# `src/` is added to sys.path via conftest.py for tests; pylint needs an
+# equivalent hint to resolve intra-package imports when run from project root.
+init-hook = "import sys; sys.path.insert(0, 'src')"
+# Refusing to score below 9.0 keeps drift visible without forcing churn.
+fail-under = 9.0
+jobs = 0  # auto-detect CPU count
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylint.basic]
+# Win32 / FOURCC constants and short helpers (`f`, `m`, `tz`, `dt`, `im`)
+# are common in this codebase. The defaults reject these as too short.
+good-names = ["f", "i", "j", "k", "n", "m", "s", "t", "x", "y", "z", "dt", "tz", "im", "ex", "_"]
+
+[tool.pylint."messages control"]
+# Enforce real defects; silence the categories that consistently misfire on
+# this codebase (Tk widget setup, deliberate lazy imports, narrow refactor
+# metrics on parser-style code, etc.).
+disable = [
+    "missing-module-docstring",
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "import-outside-toplevel",          # cli.py + gui.py lazy-import on demand
+    "broad-exception-caught",           # cosmetic-failure fallbacks (icon load, etc.)
+    "attribute-defined-outside-init",   # Tk pattern: __init__ → _build_ui()
+    "consider-using-with",               # cli.py keeps stdout/stderr handles open
+    "too-few-public-methods",
+    "too-many-instance-attributes",
+    "too-many-arguments",
+    "too-many-positional-arguments",
+    "too-many-locals",
+    "too-many-branches",
+    "too-many-statements",
+    "too-many-return-statements",
+    "duplicate-code",
+]

@@ -1,7 +1,6 @@
 """Resolve GPMF samples within an MP4 file: file-offset and size of each KLV payload."""
 from __future__ import annotations
 
-import struct
 from dataclasses import dataclass
 from typing import BinaryIO, Iterator
 

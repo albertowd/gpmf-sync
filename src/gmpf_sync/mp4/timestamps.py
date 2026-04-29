@@ -8,10 +8,9 @@ from pathlib import Path
 from typing import BinaryIO
 
 from .atoms import find_first, walk
-from .gpmf import find_recursive, iter_entries
+from .gpmf import find_recursive
 from .gpmf_track import iter_sample_refs, read_sample
 from .meta import (
-    QT_EPOCH_OFFSET,
     TrackInfo,
     collect_tracks,
     parse_mvhd,
@@ -76,8 +75,12 @@ def _parse_gpsu(raw: bytes) -> float | None:
     if len(s) < 12:
         return None
     try:
-        yy = int(s[0:2]); mm = int(s[2:4]); dd = int(s[4:6])
-        hh = int(s[6:8]); mi = int(s[8:10]); ss = int(s[10:12])
+        yy = int(s[0:2])
+        mm = int(s[2:4])
+        dd = int(s[4:6])
+        hh = int(s[6:8])
+        mi = int(s[8:10])
+        ss = int(s[10:12])
         frac = 0.0
         if len(s) > 12 and s[12] == ".":
             frac = float("0" + s[12:])
@@ -114,8 +117,9 @@ def _extract_mvhd(f: BinaryIO, moov_atom) -> StampSource:
     )
 
 
-def _extract_mdhd(f: BinaryIO, tracks: list[TrackInfo]) -> StampSource:
-    """First video track's mdhd creation time."""
+def _extract_mdhd(_f: BinaryIO, tracks: list[TrackInfo]) -> StampSource:
+    """First video track's mdhd creation time. ``_f`` is unused; the
+    signature matches the sibling ``_extract_*`` functions."""
     vide = next((t for t in tracks if t.handler_type == b"vide" and t.mdhd), None)
     if vide is None:
         return StampSource.missing("mdhd", "no video track with mdhd")

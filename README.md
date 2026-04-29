@@ -336,10 +336,17 @@ PYTHONPATH=src .venv/Scripts/python -m gmpf_sync stamp <file.mp4>
 # run tests against GoPro's sample files
 git clone https://github.com/gopro/gpmf-parser /tmp/gpmf-parser
 GMPF_SYNC_SAMPLES_DIR=/tmp/gpmf-parser/samples .venv/Scripts/python -m pytest tests/
+
+# install dev tooling (pylint, pytest) and run the linter
+.venv/Scripts/python -m pip install -e ".[dev]"
+.venv/Scripts/python -m pylint src/gmpf_sync
 ```
 
 The `conftest.py` at the project root puts `src/` on `sys.path` so tests
-work without an editable install.
+work without an editable install. Pylint is configured under
+`[tool.pylint]` in `pyproject.toml`; the `Lint` GitHub Actions workflow
+runs `pylint src/gmpf_sync` on every push and PR and fails the build
+below the configured `fail-under` score.
 
 ## Roadmap
 

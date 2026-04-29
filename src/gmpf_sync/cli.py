@@ -189,7 +189,7 @@ def _attach_console_on_windows() -> None:
     if kernel32.GetConsoleWindow():
         return
 
-    ATTACH_PARENT_PROCESS = -1
+    ATTACH_PARENT_PROCESS = -1  # pylint: disable=invalid-name  # Win32 constant
     if not kernel32.AttachConsole(ATTACH_PARENT_PROCESS):
         # No parent console (e.g. launched via `start` without a terminal).
         # Allocate a fresh one so output is visible somewhere.
