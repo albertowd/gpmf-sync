@@ -174,7 +174,12 @@ def _attach_console_on_windows() -> None:
     the streams that don't already have a real file descriptor — so a
     user-supplied redirect like ``gmpf-sync sync ... > out.json`` still
     wins.
+
+    The CONOUT$/CONIN$ handles below are deliberately leaked: they replace
+    sys.std* for the lifetime of the process, so we cannot close them with
+    a context manager.
     """
+    # pylint: disable=import-outside-toplevel,broad-exception-caught,consider-using-with
     if sys.platform != "win32":
         return
     try:
@@ -189,8 +194,8 @@ def _attach_console_on_windows() -> None:
     if kernel32.GetConsoleWindow():
         return
 
-    ATTACH_PARENT_PROCESS = -1  # pylint: disable=invalid-name  # Win32 constant
-    if not kernel32.AttachConsole(ATTACH_PARENT_PROCESS):
+    attach_parent_process = -1  # Win32 ATTACH_PARENT_PROCESS sentinel
+    if not kernel32.AttachConsole(attach_parent_process):
         # No parent console (e.g. launched via `start` without a terminal).
         # Allocate a fresh one so output is visible somewhere.
         kernel32.AllocConsole()
@@ -226,7 +231,9 @@ def main(argv: list[str] | None = None) -> int:
         argv = sys.argv[1:]
     if not argv:
         try:
-            from .gui import launch
+            # Lazy import: keeps tkinter out of the CLI-only path, and lets
+            # the GUI fall back to a CLI error if tkinterdnd2 is missing.
+            from .gui import launch  # pylint: disable=import-outside-toplevel
         except ImportError as e:
             _attach_console_on_windows()
             print(

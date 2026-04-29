@@ -105,6 +105,15 @@ class SyncApp:
         self._files: list[Path] = []
         self._console_expanded = False
 
+        # Widgets populated by _build_ui() and its helpers; declared here so
+        # the full attribute surface is visible at construction time.
+        self.cards_canvas: tk.Canvas
+        self.cards_frame: tk.Frame
+        self._cards_window_id: int
+        self.console_toggle: tk.Label
+        self.console_frame: tk.Frame
+        self.output: tk.Text
+
         self._build_ui()
         self._center_on_screen(_WIN_W, _WIN_H)
 
@@ -125,7 +134,9 @@ class SyncApp:
         Failure is silent — the icon is cosmetic.
         """
         try:
-            from importlib.resources import as_file, files
+            # Guarded for the Python <3.9 case; importing at module load
+            # would unconditionally fail there.
+            from importlib.resources import as_file, files  # pylint: disable=import-outside-toplevel
         except ImportError:  # pragma: no cover - Python < 3.9
             return
 
@@ -365,7 +376,9 @@ class SyncApp:
     def _compute_and_render(self) -> None:
         try:
             report = build_sync_report(self._files)
-        except Exception as exc:  # pragma: no cover - defensive
+        # Catch-all so any parser bug surfaces in the UI rather than killing
+        # the worker thread silently.
+        except Exception as exc:  # pylint: disable=broad-exception-caught  # pragma: no cover - defensive
             self.root.after(0, lambda: self._show_placeholder(f"Error: {exc}"))
             return
         self.root.after(0, lambda: self._render(report))

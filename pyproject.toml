@@ -26,37 +26,42 @@ packages = ["src/gmpf_sync"]
 # `src/` is added to sys.path via conftest.py for tests; pylint needs an
 # equivalent hint to resolve intra-package imports when run from project root.
 init-hook = "import sys; sys.path.insert(0, 'src')"
-# Refusing to score below 9.0 keeps drift visible without forcing churn.
-fail-under = 9.0
+# Refusing to score below 9.5 keeps drift visible without forcing churn.
+fail-under = 9.5
 jobs = 0  # auto-detect CPU count
 
 [tool.pylint.format]
 max-line-length = 120
 
 [tool.pylint.basic]
-# Win32 / FOURCC constants and short helpers (`f`, `m`, `tz`, `dt`, `im`)
-# are common in this codebase. The defaults reject these as too short.
+# Short loop/struct names common in binary-format parsing code.
 good-names = ["f", "i", "j", "k", "n", "m", "s", "t", "x", "y", "z", "dt", "tz", "im", "ex", "_"]
 
+[tool.pylint.design]
+# Raised from defaults so the metrics still flag truly excessive cases
+# (rather than firing on the GUI App or binary-format parsers, which
+# legitimately exceed the conservative defaults).
+max-attributes = 15        # default 7  — Tk SyncApp + dataclasses
+max-locals = 20            # default 15 — GUI builders, sample-table reader
+max-branches = 15          # default 12 — gpmf_track sample reader
+max-returns = 10           # default 6  — sync.read_first_timestamp dispatch
+min-public-methods = 1     # default 2  — dataclasses + Tk app entry point
+
 [tool.pylint."messages control"]
-# Enforce real defects; silence the categories that consistently misfire on
-# this codebase (Tk widget setup, deliberate lazy imports, narrow refactor
-# metrics on parser-style code, etc.).
+# Inline `# pylint: disable=...` comments cover the few sites that
+# legitimately need an exception; everything else is fixed in code or
+# absorbed by the raised thresholds above. Only categories that are
+# consistently noisy across the codebase live here:
+#   - The dataclass-heavy modules don't benefit from boilerplate
+#     class/function docstrings beyond the existing module-level ones.
+#   - Spec-driven sentinel comparisons (e.g. ``size32 == 0`` for the MP4
+#     "extends to EOF" marker, paired with ``size32 == 1``) read more
+#     clearly than ``not size32``.
+#   - duplicate-code triggers on near-identical small parsers; abstracting
+#     them would obscure the spec-to-code mapping.
 disable = [
-    "missing-module-docstring",
     "missing-class-docstring",
     "missing-function-docstring",
-    "import-outside-toplevel",          # cli.py + gui.py lazy-import on demand
-    "broad-exception-caught",           # cosmetic-failure fallbacks (icon load, etc.)
-    "attribute-defined-outside-init",   # Tk pattern: __init__ → _build_ui()
-    "consider-using-with",               # cli.py keeps stdout/stderr handles open
-    "too-few-public-methods",
-    "too-many-instance-attributes",
-    "too-many-arguments",
-    "too-many-positional-arguments",
-    "too-many-locals",
-    "too-many-branches",
-    "too-many-statements",
-    "too-many-return-statements",
+    "use-implicit-booleaness-not-comparison-to-zero",
     "duplicate-code",
 ]
