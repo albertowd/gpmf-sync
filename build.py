@@ -17,6 +17,7 @@ The binary is platform-specific; run this script on each target OS.
 from __future__ import annotations
 
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -25,6 +26,19 @@ from pathlib import Path
 ROOT = Path(__file__).parent
 SRC = ROOT / "src"
 ENTRY = ROOT / "entry.py"
+
+
+def _read_version() -> str:
+    """Pull ``__version__`` out of the package without importing it.
+
+    Avoids a build-time dependency on the package being on ``sys.path``;
+    the regex tracks PEP 440-ish strings inside a string literal.
+    """
+    text = (SRC / "gmpf_sync" / "__init__.py").read_text(encoding="utf-8")
+    m = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', text)
+    if not m:
+        raise RuntimeError("Could not parse __version__ from gmpf_sync/__init__.py")
+    return m.group(1)
 
 
 def main() -> int:
@@ -45,10 +59,13 @@ def main() -> int:
     for spec in ROOT.glob("*.spec"):
         spec.unlink()
 
+    version = _read_version()
+    output_name = f"gmpf-sync-{version}"
+
     cmd = [
         sys.executable, "-m", "PyInstaller",
         "--onefile",
-        "--name", "gmpf-sync",
+        "--name", output_name,
         "--paths", str(SRC),
         "--hidden-import", "gmpf_sync",
         "--hidden-import", "gmpf_sync.cli",
@@ -82,7 +99,7 @@ def main() -> int:
         return rc
 
     suffix = ".exe" if platform.system() == "Windows" else ""
-    out = ROOT / "dist" / f"gmpf-sync{suffix}"
+    out = ROOT / "dist" / f"{output_name}{suffix}"
     if out.is_file():
         size_mb = out.stat().st_size / (1024 * 1024)
         print(f"[build] ok: {out}  ({size_mb:.1f} MB)")

@@ -30,6 +30,7 @@ from tkinter import filedialog, ttk
 
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
+from . import __version__
 from .sync import SyncReport, build_sync_report, describe_action
 
 
@@ -96,7 +97,7 @@ def _truncate_path(s: str, max_chars: int = 60) -> str:
 class SyncApp:
     def __init__(self) -> None:
         self.root = TkinterDnD.Tk()
-        self.root.title("gmpf-sync")
+        self.root.title(f"GPMF Sync {__version__}")
         self.root.configure(bg=_BG)
         self.root.minsize(680, 480)
 
