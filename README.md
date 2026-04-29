@@ -303,20 +303,23 @@ doesn't pick them up.
 
 ```
 src/gmpf_sync/
-  cli.py           argparse front-end (stamp + sync subcommands; no-args → GUI)
-  gui.py           tkinter drag-and-drop window backed by sync.py
-  timestamps.py    MP4 orchestrator: chooses sources and assembles report
-  mp4_atoms.py     streaming atom walker (8-byte headers only)
-  mp4_meta.py     parsers for mvhd, mdhd, hdlr, stsd, stco/co64/stsz/stsc
-  gpmf.py          GPMF KLV parser (recursive container support)
-  gpmf_track.py    resolves chunk offsets → per-sample (offset, size)
-  tcx.py           TCX first-timestamp reader (streamed)
-  rc_csv.py        RaceChrono v3 CSV first-timestamp reader (streamed)
-  sync.py          cross-format orchestrator: reference + per-file deltas
+  cli.py             argparse front-end (stamp + sync subcommands; no-args → GUI)
+  gui.py             tkinter drag-and-drop window backed by sync.py
+  sync.py            cross-format orchestrator: reference + per-file deltas
+  favicon.png        1024-px source icon (build-time only; never bundled)
+  mp4/               GoPro MP4 parsing stack
+    atoms.py         streaming atom walker (8-byte headers only)
+    meta.py          parsers for mvhd, mdhd, hdlr, stsd, stco/co64/stsz/stsc
+    gpmf.py          GPMF KLV parser (recursive container support)
+    gpmf_track.py    resolves chunk offsets → per-sample (offset, size)
+    timestamps.py    high-level MP4 orchestrator: chooses sources, builds report
+  external/          non-MP4 time-series file readers
+    tcx.py           TCX first-timestamp reader (streamed)
+    rc_csv.py        RaceChrono v3 CSV first-timestamp reader (streamed)
 tests/
-  test_samples.py  parameterised tests against gpmf-parser sample MP4s
-  test_sync.py     unit tests for tcx/csv readers and sync orchestrator
-build.py           PyInstaller driver
+  test_samples.py    parameterised tests against gpmf-parser sample MP4s
+  test_sync.py       unit tests for tcx/csv readers and sync orchestrator
+build.py             PyInstaller driver
 entry.py           PyInstaller entry point (preserves package imports)
 pyproject.toml     project metadata (no runtime dependencies)
 ```

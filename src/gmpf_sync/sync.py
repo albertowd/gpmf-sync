@@ -25,8 +25,8 @@ import datetime as _dt
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from . import rc_csv, tcx
-from .timestamps import DEFAULT_AUTO_ORDER, extract_timestamps
+from .external import rc_csv, tcx
+from .mp4.timestamps import DEFAULT_AUTO_ORDER, extract_timestamps
 
 UTC = _dt.timezone.utc
 

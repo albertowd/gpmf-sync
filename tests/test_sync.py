@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from gmpf_sync import rc_csv, tcx
+from gmpf_sync.external import rc_csv, tcx
 from gmpf_sync.sync import (
     FileTimestamp,
     build_sync_report,
@@ -130,7 +130,7 @@ def test_sync_report_uses_mp4_as_reference_when_present(tmp_path, monkeypatch):
     mp4_epoch = 1723472631.500 + 60.0
 
     def _fake_extract(path, source="auto"):
-        from gmpf_sync.timestamps import TimestampReport, StampSource
+        from gmpf_sync.mp4.timestamps import TimestampReport, StampSource
         s = StampSource(name="gps", epoch=mp4_epoch, iso="(fake-gps)")
         return TimestampReport(
             file=str(path), file_size=0, sources={"gps": s},
@@ -170,7 +170,7 @@ def test_sync_report_surfaces_mp4_alternatives_when_sources_disagree(tmp_path, m
     assert csv_epoch is not None
 
     def _fake_extract(path, source="all"):
-        from gmpf_sync.timestamps import TimestampReport, StampSource
+        from gmpf_sync.mp4.timestamps import TimestampReport, StampSource
         sources = {
             "gps":  StampSource.missing("gps", "no fix"),
             "mvhd": StampSource(name="mvhd", epoch=mvhd_epoch, iso="2026-03-21T14:48:53Z"),

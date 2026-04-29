@@ -5,7 +5,7 @@ import struct
 from dataclasses import dataclass
 from typing import BinaryIO
 
-from .mp4_atoms import Atom, walk
+from .atoms import Atom, walk
 
 # Seconds between QuickTime epoch (1904-01-01 UTC) and Unix epoch (1970-01-01 UTC).
 QT_EPOCH_OFFSET = 2_082_844_800

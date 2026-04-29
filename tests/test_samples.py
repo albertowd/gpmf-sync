@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from gmpf_sync.timestamps import extract_timestamps
+from gmpf_sync.mp4.timestamps import extract_timestamps
 
 UTC = _dt.timezone.utc
 _PROJECT_ROOT = Path(__file__).parent.parent

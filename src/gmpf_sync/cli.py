@@ -7,8 +7,8 @@ import sys
 from pathlib import Path
 
 from . import __version__
+from .mp4.timestamps import TimestampReport, extract_timestamps
 from .sync import SyncReport, build_sync_report, describe_action
-from .timestamps import TimestampReport, extract_timestamps
 
 
 SOURCE_CHOICES = ["auto", "gps", "mvhd", "mdhd", "cdat", "all"]

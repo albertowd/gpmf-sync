@@ -5,7 +5,7 @@ import struct
 from dataclasses import dataclass
 from typing import BinaryIO, Iterator
 
-from .mp4_meta import (
+from .meta import (
     TrackInfo,
     parse_co64,
     parse_stco,

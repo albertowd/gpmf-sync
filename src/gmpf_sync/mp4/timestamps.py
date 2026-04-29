@@ -7,10 +7,10 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import BinaryIO
 
+from .atoms import find_first, walk
 from .gpmf import find_recursive, iter_entries
 from .gpmf_track import iter_sample_refs, read_sample
-from .mp4_atoms import find_first, walk
-from .mp4_meta import (
+from .meta import (
     QT_EPOCH_OFFSET,
     TrackInfo,
     collect_tracks,
