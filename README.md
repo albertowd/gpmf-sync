@@ -1,5 +1,8 @@
 # gmpf-sync
 
+A tool to sync GoPro files with other time based files, like Race Chrono V3
+and TCX files.
+
 Extract creation timestamps from GoPro MP4 files **without loading the file
 into memory**, then compare them against external time-series files (TCX
 workout exports, RaceChrono v3 CSV logs) to compute the trim/offset you need
@@ -269,7 +272,19 @@ one with fix ≥ 2. After that, surface whatever was best.
 The output is a single self-contained ~8 MB executable (Windows;
 macOS/Linux are similar). PyInstaller binaries don't cross-compile, so
 the script must be run on each target OS — multi-platform releases are
-typically driven through a CI matrix.
+driven through the GitHub Actions matrix in `.github/workflows/release.yml`.
+
+### Cutting a release
+
+1. Bump `__version__` in `src/gmpf_sync/__init__.py`.
+2. Move the relevant `## [Unreleased]` entries in `CHANGELOG.md` under a
+   new `## [x.y.z] - YYYY-MM-DD` heading and update the comparison links
+   at the bottom of the file.
+3. Commit, then tag and push: `git tag vx.y.z && git push origin vx.y.z`.
+4. The `Release` workflow builds binaries for Windows x86_64, Linux
+   x86_64, macOS arm64 and macOS x86_64, then publishes a GitHub Release
+   whose body is the matching `CHANGELOG.md` section, with all four
+   binaries attached.
 
 `build.py` performs a few platform-aware steps automatically:
 
