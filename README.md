@@ -262,13 +262,27 @@ one with fix ≥ 2. After that, surface whatever was best.
 ## Build the portable executable
 
 ```bash
-.venv/Scripts/python build.py        # Windows  → dist/gmpf-sync.exe
-.venv/bin/python build.py            # macOS/Linux → dist/gmpf-sync
+.venv/Scripts/python build.py        # Windows  → dist/gmpf-sync-<ver>.exe
+.venv/bin/python build.py            # macOS/Linux → dist/gmpf-sync-<ver>
 ```
 
-The output is a single self-contained ~8 MB executable. It is
-platform-specific — PyInstaller binaries don't cross-compile, so build on
-each target OS.
+The output is a single self-contained ~8 MB executable (Windows;
+macOS/Linux are similar). PyInstaller binaries don't cross-compile, so
+the script must be run on each target OS — multi-platform releases are
+typically driven through a CI matrix.
+
+`build.py` performs a few platform-aware steps automatically:
+
+| Host | Icon embedded into binary | Bundled for window icon | tkdnd library shipped |
+| --- | --- | --- | --- |
+| Windows | `gmpf-sync.ico` (16/32/48/256, hand-rolled PNG-in-ICO) | same `.ico` | `tkinterdnd2/tkdnd/win-x64` only |
+| macOS   | `gmpf-sync.icns` (16…512, hand-rolled PNG-in-ICNS) | small derived `.png` | `tkinterdnd2/tkdnd/osx-{x64,arm64}` matching host |
+| Linux   | downsized `.png` | same `.png` | `tkinterdnd2/tkdnd/linux-*` matching host |
+
+The 1024×1024 source `favicon.png` is **never** bundled — only the
+platform-derived asset (≤300 KB). Cross-arch tkdnd libraries are
+temporarily renamed in site-packages during the build so PyInstaller
+doesn't pick them up.
 
 ## Project layout
 

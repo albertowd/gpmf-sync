@@ -100,12 +100,58 @@ class SyncApp:
         self.root.title(f"GPMF Sync {__version__}")
         self.root.configure(bg=_BG)
         self.root.minsize(680, 480)
+        self._set_window_icon()
 
         self._files: list[Path] = []
         self._console_expanded = False
 
         self._build_ui()
         self._center_on_screen(_WIN_W, _WIN_H)
+
+    # ---- window chrome ---------------------------------------------------
+
+    def _set_window_icon(self) -> None:
+        """Set the title-bar / taskbar icon, walking through resources in
+        priority order until one loads:
+
+        1. ``gmpf_sync/gmpf-sync.ico`` — Windows-only, used via
+           ``iconbitmap`` (frozen Windows build).
+        2. ``gmpf_sync/gmpf-sync.png`` — small derived PNG bundled on
+           macOS/Linux, used via ``iconphoto``. Tk's ``PhotoImage``
+           cannot read .icns, so we ship a PNG alongside on macOS.
+        3. ``gmpf_sync/favicon.png`` — original 1024-px source PNG.
+           Only present in dev runs (build.py never bundles it).
+
+        Failure is silent — the icon is cosmetic.
+        """
+        try:
+            from importlib.resources import as_file, files
+        except ImportError:  # pragma: no cover - Python < 3.9
+            return
+
+        # Try the Windows .ico first; only succeeds when iconbitmap accepts it
+        # (Windows). On other platforms iconbitmap with a .ico raises TclError.
+        try:
+            ico_ref = files("gmpf_sync") / "gmpf-sync.ico"
+            with as_file(ico_ref) as path:
+                if path.is_file():
+                    self.root.iconbitmap(str(path))
+                    return
+        except (FileNotFoundError, OSError, tk.TclError):
+            pass
+
+        for resource_name in ("gmpf-sync.png", "favicon.png"):
+            try:
+                ref = files("gmpf_sync") / resource_name
+                with as_file(ref) as path:
+                    if path.is_file():
+                        img = tk.PhotoImage(file=str(path))
+                        self.root.iconphoto(True, img)
+                        # Tk holds a weak ref; keep our own to prevent GC.
+                        self._icon_photo = img
+                        return
+            except (FileNotFoundError, OSError, tk.TclError):
+                continue
 
     # ---- positioning -----------------------------------------------------
 
