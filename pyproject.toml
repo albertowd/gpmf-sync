@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gmpf-sync"
+version = "0.1.0"
+description = "Extract creation timestamps from GoPro MP4 files via streaming atom parsing"
+requires-python = ">=3.10"
+authors = [{ name = "Alberto WD", email = "alberto@albertowd.dev" }]
+dependencies = []
+
+[project.scripts]
+gmpf-sync = "gmpf_sync.cli:main"
+
+[project.optional-dependencies]
+build = ["pyinstaller>=6.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gmpf_sync"]
