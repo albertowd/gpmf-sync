@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
+from .sync import SyncReport, build_sync_report, describe_action
 from .timestamps import TimestampReport, extract_timestamps
 
 
@@ -66,6 +67,19 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Which timestamp source to extract (default: auto).",
     )
     stamp.add_argument("--json", action="store_true", help="Emit JSON instead of human-readable text.")
+
+    sync = sub.add_parser(
+        "sync",
+        help="Compare first-timestamps across MP4/TCX/CSV files and report offsets.",
+        description=(
+            "Read the first/representative timestamp from each input file and "
+            "report how each one is offset from a reference (the first MP4, "
+            "by default). Supported formats: GoPro MP4/MOV, TCX activity files, "
+            "RaceChrono v3 CSV logs."
+        ),
+    )
+    sync.add_argument("files", nargs="+", type=Path, help="Mixed list of MP4/TCX/CSV files.")
+    sync.add_argument("--json", action="store_true", help="Emit JSON instead of human-readable text.")
     return p
 
 
@@ -100,11 +114,63 @@ def _run_stamp(args: argparse.Namespace) -> int:
     return 0 if failures == 0 else 2
 
 
+def _human_sync_report(r: SyncReport) -> str:
+    lines: list[str] = []
+    if r.reference_file is None:
+        lines.append("reference:   -- no usable timestamp in any input")
+        lines.append("")
+    else:
+        primary_label = f" [{r.reference_primary_source}]" if r.reference_primary_source else ""
+        lines.append(f"reference:   {r.reference_file}")
+        lines.append(f"             {r.reference_iso}{primary_label}  (primary, epoch={r.reference_epoch})")
+        for c in r.reference_alternatives:
+            lines.append(f"             {c.iso} [{c.source}]  (alternative)")
+        if r.reference_alternatives:
+            lines.append(
+                "             (MP4 sources disagree -- pick the row whose "
+                "timezone matches your other files.)"
+            )
+        lines.append("")
+
+    width = max((len(e.file) for e in r.entries), default=0)
+    for e in r.entries:
+        if e.epoch is None:
+            reason = e.detail.get("missing") or e.detail.get("error") or "no timestamp"
+            lines.append(f"{e.file:<{width}}  [{e.kind:<3}]  -- {reason}")
+            continue
+
+        if e.action == "reference":
+            lines.append(f"{e.file:<{width}}  [{e.kind:<3}]  {e.iso}   (reference)")
+            continue
+
+        note = describe_action(e.action, e.delta_seconds)
+        lines.append(f"{e.file:<{width}}  [{e.kind:<3}]  {e.iso}   {note}")
+
+        for alt in e.alternatives:
+            alt_note = describe_action(alt.action, alt.delta_seconds)
+            indent = " " * (width + 2 + 5 + 2)  # align under primary note
+            lines.append(f"{indent}  alt vs [{alt.reference_source}] {alt.reference_iso}: {alt_note}")
+
+    return "\n".join(lines)
+
+
+def _run_sync(args: argparse.Namespace) -> int:
+    report = build_sync_report(args.files)
+    if args.json:
+        json.dump(report.to_dict(), sys.stdout, indent=2, default=str)
+        sys.stdout.write("\n")
+    else:
+        print(_human_sync_report(report))
+    return 0 if report.reference_file is not None else 2
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
     if args.command == "stamp":
         return _run_stamp(args)
+    if args.command == "sync":
+        return _run_sync(args)
     parser.print_help()
     return 1
 

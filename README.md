@@ -1,11 +1,9 @@
 # gmpf-sync
 
 Extract creation timestamps from GoPro MP4 files **without loading the file
-into memory**, with the goal of later synchronising GoPro footage against
-external time-series files (TCX workouts, CSV sensor logs, etc.).
-
-The first milestone is timestamp extraction in isolation. The downstream
-synchronisation step is on the roadmap; see [Roadmap](#roadmap).
+into memory**, then compare them against external time-series files (TCX
+workout exports, RaceChrono v3 CSV logs) to compute the trim/offset you need
+to apply in another tool to align them.
 
 ## What it does
 
@@ -61,6 +59,14 @@ The runtime itself has **zero third-party dependencies** — only stdlib. The
 packages above are needed for testing and building the portable executable.
 
 ## Usage
+
+Two subcommands:
+
+- `stamp` — extract one or more timestamps from a single GoPro MP4
+- `sync` — compare timestamps across a mix of MP4/TCX/CSV files and report
+  the trim/offset needed to align them
+
+### `stamp`
 
 ```
 gmpf-sync stamp <file.mp4> [<file2.mp4> ...] [--source SOURCE] [--json]
@@ -131,6 +137,75 @@ Or compare every source side-by-side:
 $ gmpf-sync stamp clip.MP4 --source all
 ```
 
+### `sync`
+
+```
+gmpf-sync sync <file1> [<file2> ...] [--json]
+```
+
+Reads the first/representative timestamp from each input file and reports
+how each one is offset from a reference. The first MP4 in the list is used
+as the reference (its `auto`-selected source); if there are no MP4 files,
+the first input with a parseable timestamp is used instead.
+
+| Format | Detected by | Timestamp source |
+| --- | --- | --- |
+| GoPro MP4/MOV | `.mp4`, `.mov` | `extract_timestamps(..., source="auto")` |
+| TCX activity  | `.tcx`         | first `<Id>...</Id>` element |
+| RaceChrono v3 CSV | `.csv`     | first row whose column 0 is a positive epoch like `1723472631.500` |
+
+For each non-reference file, the report says either:
+
+- **`offset by HH:MM:SS.mmm`** — the file started *after* the reference;
+  delay (offset) the file by this amount in your editing tool.
+- **`trim head by HH:MM:SS.mmm`** — the file started *before* the reference;
+  trim that much off the start of the file.
+- **`aligned`** — same instant, no adjustment needed.
+
+Example:
+
+```
+$ gmpf-sync sync GH010001.MP4 ride.tcx racechrono.csv
+reference:   GH010001.MP4
+             2024-08-12T14:23:51.500000Z [gps]  (primary, epoch=1723472631.5)
+
+GH010001.MP4    [mp4]  2024-08-12T14:23:51.500000Z   (reference)
+ride.tcx        [tcx]  2024-08-12T14:23:30Z          trim head by 00:00:21.500
+racechrono.csv  [csv]  2024-08-12T14:25:00.250000Z   offset by 00:01:08.750
+```
+
+When the GoPro's MP4 sources disagree (typically because GPS isn't available
+and the firmware writes `mvhd` as local time but `cdat` as another clock
+basis), the sync command surfaces every distinct candidate and shows the
+alternative offset for each non-reference file:
+
+```
+$ gmpf-sync sync session.csv GX010076.MP4
+reference:   GX010076.MP4
+             2026-03-21T14:48:53Z [mvhd]  (primary, epoch=1774104533.0)
+             2026-03-21T11:48:53Z [cdat]  (alternative)
+             (MP4 sources disagree -- pick the row whose timezone matches your other files.)
+
+session.csv    [csv]  2026-03-21T14:49:08.017000Z   offset by 00:00:15.017
+                                                      alt vs [cdat] 2026-03-21T11:48:53Z: offset by 03:00:15.017
+GX010076.MP4   [mp4]  2026-03-21T14:48:53Z          (reference)
+```
+
+JSON output (suitable for piping into a sync script):
+
+```
+$ gmpf-sync sync GH010001.MP4 ride.tcx --json
+{
+  "reference": { "file": "GH010001.MP4", "epoch": ..., "iso": "..." },
+  "entries": [
+    { "file": "GH010001.MP4", "kind": "mp4", "epoch": ..., "iso": "...",
+      "delta_seconds": 0.0, "action": "reference", "detail": {"source": "gps"} },
+    { "file": "ride.tcx",     "kind": "tcx", "epoch": ..., "iso": "...",
+      "delta_seconds": -21.5, "action": "trim", "detail": {} }
+  ]
+}
+```
+
 ## A note on timezones
 
 The MP4/QuickTime spec says `mvhd`/`mdhd` `creation_time` is **UTC since
@@ -183,14 +258,18 @@ each target OS.
 
 ```
 src/gmpf_sync/
-  cli.py           argparse front-end
-  timestamps.py    orchestrator: chooses sources and assembles report
+  cli.py           argparse front-end (stamp + sync subcommands)
+  timestamps.py    MP4 orchestrator: chooses sources and assembles report
   mp4_atoms.py     streaming atom walker (8-byte headers only)
   mp4_meta.py     parsers for mvhd, mdhd, hdlr, stsd, stco/co64/stsz/stsc
   gpmf.py          GPMF KLV parser (recursive container support)
   gpmf_track.py    resolves chunk offsets → per-sample (offset, size)
+  tcx.py           TCX first-timestamp reader (streamed)
+  rc_csv.py        RaceChrono v3 CSV first-timestamp reader (streamed)
+  sync.py          cross-format orchestrator: reference + per-file deltas
 tests/
   test_samples.py  parameterised tests against gpmf-parser sample MP4s
+  test_sync.py     unit tests for tcx/csv readers and sync orchestrator
 build.py           PyInstaller driver
 entry.py           PyInstaller entry point (preserves package imports)
 pyproject.toml     project metadata (no runtime dependencies)
@@ -216,11 +295,12 @@ work without an editable install.
 ## Roadmap
 
 1. **Done — milestone 1**: timestamp extraction CLI with JSON output.
-2. **Next — milestone 2**: synchronise GoPro footage against external
-   time-series files (TCX, CSV). Will consume the JSON from this tool to
-   align timelines.
-3. **Later**: `--assume-tz` flag for GoPro files without GPS where
+2. **Done — milestone 2**: cross-format `sync` command — compare GoPro MP4
+   against TCX and RaceChrono v3 CSV and emit trim/offset.
+3. **Next**: `--assume-tz` flag for GoPro files without GPS where
    `mvhd`/`CDAT` need explicit timezone correction.
+4. **Later**: more CSV dialects (currently only RaceChrono v3 is detected
+   automatically); generic `--csv-epoch-column` override.
 
 ## Acknowledgements
 
