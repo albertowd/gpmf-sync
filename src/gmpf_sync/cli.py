@@ -164,7 +164,82 @@ def _run_sync(args: argparse.Namespace) -> int:
     return 0 if report.reference_file is not None else 2
 
 
+def _attach_console_on_windows() -> None:
+    """Make stdio usable in CLI mode under a ``--windowed`` PyInstaller build.
+
+    The frozen executable is built with the Windows GUI subsystem so no
+    console flashes on double-click. That also means CLI subcommands have
+    no stdio attached. Here we attach to the parent shell's console (or
+    allocate a fresh one) and rebind ``sys.stdout/stderr/stdin`` only for
+    the streams that don't already have a real file descriptor — so a
+    user-supplied redirect like ``gmpf-sync sync ... > out.json`` still
+    wins.
+    """
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+    except Exception:  # pragma: no cover - defensive
+        return
+
+    kernel32 = ctypes.windll.kernel32
+
+    # Already have a console (e.g. running under python.exe in dev)? Nothing
+    # to do — sys.std* are already wired up correctly.
+    if kernel32.GetConsoleWindow():
+        return
+
+    ATTACH_PARENT_PROCESS = -1
+    if not kernel32.AttachConsole(ATTACH_PARENT_PROCESS):
+        # No parent console (e.g. launched via `start` without a terminal).
+        # Allocate a fresh one so output is visible somewhere.
+        kernel32.AllocConsole()
+
+    def _has_real_fd(stream) -> bool:
+        try:
+            return stream is not None and stream.fileno() >= 0
+        except (AttributeError, OSError, ValueError):
+            return False
+
+    if not _has_real_fd(sys.stdout):
+        try:
+            sys.stdout = open("CONOUT$", "w", buffering=1, encoding="utf-8", errors="replace")
+        except OSError:
+            pass
+    if not _has_real_fd(sys.stderr):
+        try:
+            sys.stderr = open("CONOUT$", "w", buffering=1, encoding="utf-8", errors="replace")
+        except OSError:
+            pass
+    if not _has_real_fd(sys.stdin):
+        try:
+            sys.stdin = open("CONIN$", "r", encoding="utf-8", errors="replace")
+        except OSError:
+            pass
+
+
 def main(argv: list[str] | None = None) -> int:
+    # No arguments at all → launch the drag-and-drop GUI. argparse with
+    # required=True would otherwise exit 2 with a usage error, which is
+    # unfriendly when the user just double-clicked the executable.
+    if argv is None:
+        argv = sys.argv[1:]
+    if not argv:
+        try:
+            from .gui import launch
+        except ImportError as e:
+            _attach_console_on_windows()
+            print(
+                f"GUI unavailable: {e}\n"
+                "Install with `pip install gmpf-sync` or use the CLI: gmpf-sync --help",
+                file=sys.stderr,
+            )
+            return 1
+        return launch()
+
+    # CLI mode under a windowed bundle — wire up a console for stdout/stderr.
+    _attach_console_on_windows()
+
     parser = _build_parser()
     args = parser.parse_args(argv)
     if args.command == "stamp":

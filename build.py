@@ -57,7 +57,20 @@ def main() -> int:
         "--hidden-import", "gmpf_sync.gpmf_track",
         "--hidden-import", "gmpf_sync.mp4_atoms",
         "--hidden-import", "gmpf_sync.mp4_meta",
-        "--console",
+        "--hidden-import", "gmpf_sync.tcx",
+        "--hidden-import", "gmpf_sync.rc_csv",
+        "--hidden-import", "gmpf_sync.sync",
+        "--hidden-import", "gmpf_sync.gui",
+        # tkinterdnd2 ships a tkdnd shared library that PyInstaller bundles
+        # automatically when the package is collected. ``--collect-all``
+        # makes sure both the Python module and its data directory tag
+        # along into the one-file binary.
+        "--collect-all", "tkinterdnd2",
+        # Build as a Windows-subsystem binary: no console window is allocated
+        # at process start, so double-clicking the GUI mode shows no flash.
+        # When CLI args are passed, cli.main() dynamically attaches to the
+        # parent shell's console (or allocates a fresh one) before printing.
+        "--windowed",
         "--clean",
         "--noconfirm",
         str(ENTRY),

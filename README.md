@@ -55,16 +55,32 @@ python -m venv .venv
 .venv/bin/python -m pip install pytest pyinstaller
 ```
 
-The runtime itself has **zero third-party dependencies** — only stdlib. The
-packages above are needed for testing and building the portable executable.
+The runtime depends on a single small package — `tkinterdnd2` — which
+provides native drag-and-drop on Tk for the GUI mode. Everything else is
+stdlib. The extra packages above are only needed for testing and building
+the portable executable.
 
 ## Usage
 
-Two subcommands:
+Run the executable with **no arguments** to open a drag-and-drop window:
+drop GoPro MP4s, TCX activity files, and RaceChrono v3 CSVs onto it and
+the trim/offset report appears inline. This is the path most non-technical
+users will take.
+
+For scripting, two CLI subcommands:
 
 - `stamp` — extract one or more timestamps from a single GoPro MP4
 - `sync` — compare timestamps across a mix of MP4/TCX/CSV files and report
   the trim/offset needed to align them
+
+> **Windows note**: the released `.exe` is built as a GUI-subsystem binary
+> so double-clicking it opens the GUI without a console flash. CLI
+> subcommands still print to the console — the executable attaches to the
+> parent shell's console at startup. From `cmd.exe`, the prompt may return
+> before the process finishes (cmd doesn't wait on GUI binaries). Use
+> `start /wait gmpf-sync.exe …` if you need cmd to block, or run from
+> PowerShell which waits automatically. Output redirection
+> (`gmpf-sync sync … > out.json`) works in both shells.
 
 ### `stamp`
 
@@ -258,7 +274,8 @@ each target OS.
 
 ```
 src/gmpf_sync/
-  cli.py           argparse front-end (stamp + sync subcommands)
+  cli.py           argparse front-end (stamp + sync subcommands; no-args → GUI)
+  gui.py           tkinter drag-and-drop window backed by sync.py
   timestamps.py    MP4 orchestrator: chooses sources and assembles report
   mp4_atoms.py     streaming atom walker (8-byte headers only)
   mp4_meta.py     parsers for mvhd, mdhd, hdlr, stsd, stco/co64/stsz/stsc

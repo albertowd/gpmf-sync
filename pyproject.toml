@@ -8,7 +8,9 @@ version = "0.1.0"
 description = "Extract creation timestamps from GoPro MP4 files via streaming atom parsing"
 requires-python = ">=3.10"
 authors = [{ name = "Alberto WD", email = "alberto@albertowd.dev" }]
-dependencies = []
+dependencies = [
+    "tkinterdnd2>=0.4.0",
+]
 
 [project.scripts]
 gmpf-sync = "gmpf_sync.cli:main"
