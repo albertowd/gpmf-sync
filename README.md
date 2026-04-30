@@ -1,5 +1,7 @@
 # gmpf-sync
 
+![GPMF Sync preview](https://raw.githubusercontent.com/albertowd/gpmf-sync/main/preview.webp)
+
 A tool to sync GoPro files with other time based files, like Race Chrono V3
 and TCX files.
 

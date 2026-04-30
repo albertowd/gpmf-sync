@@ -38,7 +38,7 @@ from .sync import SyncReport, build_sync_report, describe_action
 
 _BG = "#1e1e1e"
 _FG = "#e8e8e8"
-_FG_DIM = "#9a9a9a"
+_FG_DIM = "#b8b8b8"
 
 _CARD_BG = "#2a2a2a"
 _CARD_BORDER = "#3a3a3a"
@@ -101,6 +101,7 @@ class SyncApp:
         self.root.configure(bg=_BG)
         self.root.minsize(680, 480)
         self._set_window_icon()
+        self._kind_icons: dict[str, tk.PhotoImage] = self._load_kind_icons()
 
         self._files: list[Path] = []
         self._console_expanded = False
@@ -163,6 +164,30 @@ class SyncApp:
                         return
             except (FileNotFoundError, OSError, tk.TclError):
                 continue
+
+    def _load_kind_icons(self) -> dict[str, tk.PhotoImage]:
+        """Pre-render the file-kind PNG badges packaged under
+        ``gmpf_sync/icons/``. Each PNG is a 32x32 rounded square in the
+        kind colour with the matching stroke icon overlaid in white.
+        Returns an empty mapping (and the cards fall back to a text badge)
+        if the icons are unreadable, so the GUI keeps working even when
+        the package was installed without the ``icons/`` directory.
+        """
+        try:
+            from importlib.resources import as_file, files  # pylint: disable=import-outside-toplevel
+        except ImportError:  # pragma: no cover - Python < 3.9
+            return {}
+
+        icons: dict[str, tk.PhotoImage] = {}
+        for kind in ("mp4", "tcx", "csv", "unknown"):
+            try:
+                ref = files("gmpf_sync") / "icons" / f"{kind}.png"
+                with as_file(ref) as path:
+                    if path.is_file():
+                        icons[kind] = tk.PhotoImage(file=str(path))
+            except (FileNotFoundError, OSError, tk.TclError):
+                continue
+        return icons
 
     # ---- positioning -----------------------------------------------------
 
@@ -435,12 +460,17 @@ class SyncApp:
         header = tk.Frame(card, bg=bg)
         header.pack(fill="x")
 
-        badge_color = _BADGE_BG.get(entry.kind, _BADGE_BG["unknown"])
-        tk.Label(
-            header, text=f"  {entry.kind.upper()}  ",
-            bg=badge_color, fg=_FG,
-            font=("Segoe UI", 8, "bold"), padx=2, pady=2,
-        ).pack(side="left")
+        kind_key = entry.kind if entry.kind in self._kind_icons else "unknown"
+        kind_icon = self._kind_icons.get(kind_key)
+        if kind_icon is not None:
+            tk.Label(header, image=kind_icon, bg=bg, borderwidth=0).pack(side="left")
+        else:
+            badge_color = _BADGE_BG.get(entry.kind, _BADGE_BG["unknown"])
+            tk.Label(
+                header, text=f"  {entry.kind.upper()}  ",
+                bg=badge_color, fg=_FG,
+                font=("Segoe UI", 8, "bold"), padx=2, pady=2,
+            ).pack(side="left")
 
         if is_reference:
             tk.Label(

@@ -1,0 +1,8 @@
+"Session","Demo session"
+"Vehicle","Demo vehicle"
+"Driver","Demo driver"
+"Format version","3"
+
+# Time (s),GPS UTC time,GPS latitude (deg),GPS longitude (deg)
+1723717800.435,2024-08-15T10:30:00.435Z,0.0,0.0
+1723717801.435,2024-08-15T10:30:01.435Z,0.0,0.0

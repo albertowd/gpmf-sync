@@ -20,6 +20,7 @@ gmpf-sync = "gmpf_sync.cli:main"
 [project.optional-dependencies]
 build = ["pyinstaller>=6.0", "pillow>=10.0"]
 dev = ["pylint>=3.0", "pytest>=7.0"]
+preview = ["pillow>=10.0"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gmpf_sync"]
@@ -43,7 +44,7 @@ good-names = ["f", "i", "j", "k", "n", "m", "s", "t", "x", "y", "z", "dt", "tz",
 # Raised from defaults so the metrics still flag truly excessive cases
 # (rather than firing on the GUI App or binary-format parsers, which
 # legitimately exceed the conservative defaults).
-max-attributes = 15        # default 7  — Tk SyncApp + dataclasses
+max-attributes = 16        # default 7  — Tk SyncApp + dataclasses
 max-locals = 20            # default 15 — GUI builders, sample-table reader
 max-branches = 15          # default 12 — gpmf_track sample reader
 max-returns = 10           # default 6  — sync.read_first_timestamp dispatch

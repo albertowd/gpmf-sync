@@ -319,6 +319,14 @@ def main() -> int:
     for asset in runtime_assets:
         add_data_args += ["--add-data", f"{asset}{os.pathsep}gmpf_sync"]
 
+    # Card kind-icons (mp4/tcx/csv/unknown) are small static PNGs used by
+    # the GUI's per-file badges. Bundle them under gmpf_sync/icons so the
+    # importlib.resources lookup in gui.py finds them at runtime.
+    kind_icons_dir = SRC / "gmpf_sync" / "icons"
+    if kind_icons_dir.is_dir():
+        for icon_file in sorted(kind_icons_dir.glob("*.png")):
+            add_data_args += ["--add-data", f"{icon_file}{os.pathsep}gmpf_sync/icons"]
+
     cmd = [
         sys.executable, "-m", "PyInstaller",
         "--onefile",
