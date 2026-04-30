@@ -8,6 +8,12 @@ into memory**, then compare them against external time-series files (TCX
 workout exports, RaceChrono v3 CSV logs) to compute the trim/offset you need
 to apply in another tool to align them.
 
+> **Looking for a no-install version?** A TypeScript port runs entirely in
+> the browser at
+> [`albertowd/gpmf-sync-web`](https://github.com/albertowd/gpmf-sync-web) —
+> drag a GoPro `.MP4` (and optional TCX/CSV) onto the page and the same
+> sync report shows up locally; nothing is uploaded.
+
 ## What it does
 
 Given a GoPro MP4, `gmpf-sync` reads only the headers it needs (a few KB at
