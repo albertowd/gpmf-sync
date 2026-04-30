@@ -367,4 +367,7 @@ for running the test suite — see the Development section above.
 
 ## License
 
-TBD.
+Licensed under the [GNU Affero General Public License v3.0 or later](LICENSE)
+(AGPL-3.0-or-later). You may use, study, modify, and redistribute this
+software, but any redistribution — including running a modified version as
+a network service — must keep the source available under the same license.

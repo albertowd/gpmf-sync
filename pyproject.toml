@@ -8,6 +8,8 @@ version = "1.0.0"
 description = "Extract creation timestamps from GoPro MP4 files via streaming atom parsing"
 requires-python = ">=3.10"
 authors = [{ name = "Alberto WD", email = "alberto@albertowd.dev" }]
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE"]
 dependencies = [
     "tkinterdnd2>=0.4.0",
 ]
